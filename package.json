@@ -1,0 +1,14 @@
+{
+  "name": "kasi360",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kasi360 Platform — MVP Monorepo",
+  "workspaces": [
+    "backend",
+    "admin"
+  ],
+  "scripts": {
+    "backend": "npm run dev --workspace=backend",
+    "admin": "npm run dev --workspace=admin"
+  }
+}
