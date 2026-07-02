@@ -4,6 +4,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth.routes');
 const listingsRoutes = require('./routes/listings.routes');
 const ordersRoutes = require('./routes/orders.routes');
+const businessRoutes = require('./routes/businesses.routes');
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get('/health', (req, res) => res.json({ status: 'OK', project: 'Kasi360 API'
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingsRoutes);
 app.use('/api/orders', ordersRoutes);
+app.use('/api/businesses', businessRoutes);
 
 // 404 handler
 app.use((req, res) => {
