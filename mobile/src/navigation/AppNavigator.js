@@ -13,11 +13,13 @@ import HomeScreen from '../screens/main/HomeScreen';
 import ListingDetailScreen from '../screens/main/ListingDetailScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import OrdersScreen from '../screens/main/OrdersScreen';
+import OrderDetailScreen from '../screens/main/OrderDetailScreen';
+import BusinessProfileScreen from '../screens/main/BusinessProfileScreen';
 
 import MyShopScreen from '../screens/smme/MyShopScreen';
 import CreateListingScreen from '../screens/smme/CreateListingScreen';
 import CreateBusinessScreen from '../screens/smme/CreateBusinessScreen';
-import BusinessProfileScreen from '../screens/main/BusinessProfileScreen';
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -75,6 +77,8 @@ const AppNavigator = () => {
               component={BusinessProfileScreen}
               options={{ headerShown: true, title: 'Business Profile' }}
             />
+            <Stack.Screen name="OrderDetail" component={OrderDetailScreen}
+              options={{ headerShown: true, title: 'Order Details' }} />
             <Stack.Screen name="CreateBusiness" component={CreateBusinessScreen}
               options={{ headerShown: true, title: 'Business Profile' }} />
           </>

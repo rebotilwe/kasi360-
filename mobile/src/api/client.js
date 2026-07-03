@@ -1,8 +1,12 @@
-import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const BASE_URL = 'https://kasi360.onrender.com';
 
 const getToken = async () => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem('kasi360_token');
+  }
+  const SecureStore = await import('expo-secure-store');
   return await SecureStore.getItemAsync('kasi360_token');
 };
 

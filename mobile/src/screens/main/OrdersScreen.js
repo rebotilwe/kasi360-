@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import {
+  View, Text, FlatList, StyleSheet, ActivityIndicator,
+  RefreshControl, TouchableOpacity,
+} from 'react-native';
 import { getOrders } from '../../api/client';
 
 const STATUS_COLORS = {
@@ -11,8 +14,8 @@ const STATUS_COLORS = {
   cancelled: '#EF4444',
 };
 
-const OrderCard = ({ item }) => (
-  <View style={styles.card}>
+const OrderCard = ({ item, onPress }) => (
+  <TouchableOpacity style={styles.card} onPress={() => onPress(item)}>
     <View style={styles.cardTop}>
       <Text style={styles.orderId}>Order #{item.id.slice(0, 8).toUpperCase()}</Text>
       <View style={[styles.badge, { backgroundColor: STATUS_COLORS[item.status] || '#888' }]}>
@@ -27,10 +30,11 @@ const OrderCard = ({ item }) => (
     )}
     <Text style={styles.amount}>R {parseFloat(item.total_amount).toFixed(2)}</Text>
     <Text style={styles.date}>{new Date(item.created_at).toLocaleDateString('en-ZA')}</Text>
-  </View>
+    <Text style={styles.tapHint}>Tap to view details →</Text>
+  </TouchableOpacity>
 );
 
-const OrdersScreen = () => {
+const OrdersScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,7 +73,12 @@ const OrdersScreen = () => {
         <FlatList
           data={orders}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <OrderCard item={item} />}
+          renderItem={({ item }) => (
+            <OrderCard
+              item={item}
+              onPress={(o) => navigation.navigate('OrderDetail', { order_id: o.id })}
+            />
+          )}
           contentContainerStyle={styles.list}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B35" />}
         />
@@ -95,6 +104,7 @@ const styles = StyleSheet.create({
   customer: { fontSize: 13, color: '#555', marginBottom: 4 },
   amount: { fontSize: 18, fontWeight: '800', color: '#222', marginTop: 4 },
   date: { fontSize: 12, color: '#aaa', marginTop: 4 },
+  tapHint: { fontSize: 11, color: '#ccc', marginTop: 6, textAlign: 'right' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { fontSize: 18, fontWeight: '700', color: '#333', marginBottom: 4 },
   emptySubText: { fontSize: 14, color: '#888' },

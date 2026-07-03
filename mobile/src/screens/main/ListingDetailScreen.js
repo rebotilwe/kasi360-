@@ -7,25 +7,31 @@ const ListingDetailScreen = ({ route, navigation }) => {
   const { listing } = route.params;
   const { user } = useAuth();
 
-  const handleOrder = async () => {
-    if (user?.role !== 'customer') {
-      Alert.alert('Not available', 'Only customers can place orders');
-      return;
-    }
-    try {
-      await createOrder({
+ const handleOrder = async () => {
+  if (user?.role !== 'customer') {
+    window.alert('Only customers can place orders');
+    return;
+  }
+  try {
+    const token = localStorage.getItem('kasi360_token');
+    const res = await fetch('https://kasi360.onrender.com/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
         business_id: listing.business_id,
         items: [{ listing_id: listing.id, quantity: 1 }],
-      });
-      Alert.alert('Order Placed! 🎉', 'Your order has been placed successfully.', [
-        { text: 'View Orders', onPress: () => navigation.navigate('Orders') },
-        { text: 'OK' },
-      ]);
-    } catch (err) {
-      Alert.alert('Error', err.message);
-    }
-  };
-
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    window.alert('Order placed successfully! 🎉');
+  } catch (err) {
+    window.alert('Error: ' + err.message);
+  }
+};
   return (
     <ScrollView style={styles.container}>
       {listing.image_url ? (
