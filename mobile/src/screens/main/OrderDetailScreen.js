@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  ActivityIndicator, Image,
+  ActivityIndicator, Image, TouchableOpacity, TextInput,
 } from 'react-native';
+import { useAuth } from '../../context/AuthContext';
 
 const BASE_URL = 'https://kasi360.onrender.com';
 const getToken = () => {
@@ -15,19 +16,49 @@ const STATUS_COLORS = {
   out_for_delivery: '#06B6D4', delivered: '#10B981', cancelled: '#EF4444',
 };
 
+const StarRating = ({ rating, onRate, readonly = false }) => (
+  <View style={styles.starsRow}>
+    {[1, 2, 3, 4, 5].map((star) => (
+      <TouchableOpacity key={star} onPress={() => !readonly && onRate(star)} disabled={readonly}>
+        <Text style={[styles.star, star <= rating && styles.starFilled]}>★</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+);
+
 const OrderDetailScreen = ({ route }) => {
   const { order_id } = route.params;
+  const { user } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [existingReview, setExistingReview] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewStatus, setReviewStatus] = useState(null);
 
   useEffect(() => {
     const fetchOrder = async () => {
       try {
+        const token = getToken();
         const res = await fetch(`${BASE_URL}/api/orders/${order_id}`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         setOrder(data);
+
+        // Check if already reviewed
+        if (user?.role === 'customer') {
+          const revRes = await fetch(`${BASE_URL}/api/reviews/order/${order_id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const revData = await revRes.json();
+          if (revData) {
+            setExistingReview(revData);
+            setRating(revData.rating);
+            setComment(revData.comment || '');
+          }
+        }
       } catch (err) {
         console.error(err.message);
       } finally {
@@ -36,6 +67,38 @@ const OrderDetailScreen = ({ route }) => {
     };
     fetchOrder();
   }, [order_id]);
+
+  const handleReview = async () => {
+    if (rating === 0) {
+      setReviewStatus({ type: 'error', msg: 'Please select a star rating' });
+      return;
+    }
+    setReviewLoading(true);
+    setReviewStatus(null);
+    try {
+      const res = await fetch(`${BASE_URL}/api/reviews`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
+          order_id,
+          business_id: order.business_id,
+          rating,
+          comment,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setExistingReview(data);
+      setReviewStatus({ type: 'success', msg: '✅ Review submitted! Thank you.' });
+    } catch (err) {
+      setReviewStatus({ type: 'error', msg: '❌ ' + err.message });
+    } finally {
+      setReviewLoading(false);
+    }
+  };
 
   if (loading) {
     return <View style={styles.center}><ActivityIndicator size="large" color="#FF6B35" /></View>;
@@ -47,7 +110,7 @@ const OrderDetailScreen = ({ route }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Order Header */}
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.orderId}>Order #{order.id.slice(0, 8).toUpperCase()}</Text>
         <View style={[styles.badge, { backgroundColor: STATUS_COLORS[order.status] || '#888' }]}>
@@ -55,7 +118,7 @@ const OrderDetailScreen = ({ route }) => {
         </View>
       </View>
 
-      {/* Business & Date */}
+      {/* Info */}
       <View style={styles.section}>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Business</Text>
@@ -89,13 +152,13 @@ const OrderDetailScreen = ({ route }) => {
         )}
       </View>
 
-      {/* Order Items */}
+      {/* Items */}
       <Text style={styles.sectionTitle}>Items</Text>
       <View style={styles.section}>
         {order.items?.map((item, index) => (
           <View key={item.id} style={[
             styles.itemRow,
-            index < order.items.length - 1 && styles.itemBorder
+            index < order.items.length - 1 && styles.itemBorder,
           ]}>
             {item.image_url ? (
               <Image source={{ uri: item.image_url }} style={styles.itemImage} />
@@ -134,6 +197,47 @@ const OrderDetailScreen = ({ route }) => {
           <Text style={styles.grandTotalValue}>R {parseFloat(order.total_amount).toFixed(2)}</Text>
         </View>
       </View>
+
+      {/* Review Section — customers only */}
+      {user?.role === 'customer' && (
+        <View style={styles.reviewSection}>
+          <Text style={styles.sectionTitle}>
+            {existingReview ? 'Your Review' : 'Leave a Review'}
+          </Text>
+
+          {reviewStatus && (
+            <View style={[styles.statusBox, reviewStatus.type === 'success' ? styles.statusSuccess : styles.statusError]}>
+              <Text style={styles.statusText}>{reviewStatus.msg}</Text>
+            </View>
+          )}
+
+          <StarRating rating={rating} onRate={setRating} readonly={!!existingReview} />
+
+          <TextInput
+            style={[styles.input, existingReview && styles.inputReadonly]}
+            placeholder="Write a comment (optional)"
+            placeholderTextColor="#aaa"
+            value={comment}
+            onChangeText={setComment}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+            editable={!existingReview}
+          />
+
+          {!existingReview && (
+            <TouchableOpacity style={styles.reviewBtn} onPress={handleReview} disabled={reviewLoading}>
+              {reviewLoading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.reviewBtnText}>Submit Review</Text>}
+            </TouchableOpacity>
+          )}
+
+          {existingReview && (
+            <Text style={styles.reviewedNote}>✅ You reviewed this order</Text>
+          )}
+        </View>
+      )}
     </ScrollView>
   );
 };
@@ -176,7 +280,7 @@ const styles = StyleSheet.create({
   itemUnitPrice: { fontSize: 12, color: '#aaa', marginBottom: 2 },
   itemTotal: { fontSize: 14, fontWeight: '800', color: '#222' },
   totalSection: {
-    backgroundColor: '#fff', marginHorizontal: 16, marginTop: 16, marginBottom: 32,
+    backgroundColor: '#fff', marginHorizontal: 16, marginTop: 16,
     borderRadius: 12, borderWidth: 1, borderColor: '#eee', padding: 16,
   },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
@@ -188,6 +292,29 @@ const styles = StyleSheet.create({
   },
   grandTotalLabel: { fontSize: 16, fontWeight: '800', color: '#222' },
   grandTotalValue: { fontSize: 18, fontWeight: '800', color: '#FF6B35' },
+  reviewSection: {
+    backgroundColor: '#fff', marginHorizontal: 16, marginTop: 16, marginBottom: 32,
+    borderRadius: 12, borderWidth: 1, borderColor: '#eee', padding: 16,
+  },
+  starsRow: { flexDirection: 'row', gap: 8, marginBottom: 16, marginTop: 8 },
+  star: { fontSize: 36, color: '#ddd' },
+  starFilled: { color: '#F59E0B' },
+  input: {
+    borderWidth: 1, borderColor: '#ddd', borderRadius: 10,
+    padding: 12, fontSize: 14, color: '#333', marginBottom: 14,
+    minHeight: 80,
+  },
+  inputReadonly: { backgroundColor: '#f9f9f9', color: '#888' },
+  reviewBtn: {
+    backgroundColor: '#FF6B35', borderRadius: 10,
+    padding: 14, alignItems: 'center',
+  },
+  reviewBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  reviewedNote: { fontSize: 13, color: '#10B981', fontWeight: '600', textAlign: 'center' },
+  statusBox: { padding: 12, borderRadius: 8, marginBottom: 14 },
+  statusSuccess: { backgroundColor: '#D1FAE5' },
+  statusError: { backgroundColor: '#FEE2E2' },
+  statusText: { fontSize: 14, fontWeight: '600' },
 });
 
 export default OrderDetailScreen;
