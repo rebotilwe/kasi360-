@@ -1,37 +1,55 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Image, TextInput, ActivityIndicator,
+} from 'react-native';
 import { useAuth } from '../../context/AuthContext';
-import { createOrder } from '../../api/client';
 
 const ListingDetailScreen = ({ route, navigation }) => {
   const { listing } = route.params;
   const { user } = useAuth();
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [notes, setNotes] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState(null);
 
- const handleOrder = async () => {
-  if (user?.role !== 'customer') {
-    window.alert('Only customers can place orders');
-    return;
-  }
-  try {
-    const token = localStorage.getItem('kasi360_token');
-    const res = await fetch('https://kasi360.onrender.com/api/orders', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        business_id: listing.business_id,
-        items: [{ listing_id: listing.id, quantity: 1 }],
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message);
-    window.alert('Order placed successfully! 🎉');
-  } catch (err) {
-    window.alert('Error: ' + err.message);
-  }
-};
+  const handleOrder = async () => {
+    if (user?.role !== 'customer') {
+      setStatus({ type: 'error', msg: 'Only customers can place orders' });
+      return;
+    }
+    if (!deliveryAddress.trim()) {
+      setStatus({ type: 'error', msg: 'Please enter a delivery address' });
+      return;
+    }
+    setLoading(true);
+    setStatus(null);
+    try {
+      const token = localStorage.getItem('kasi360_token');
+      const res = await fetch('https://kasi360.onrender.com/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          business_id: listing.business_id,
+          items: [{ listing_id: listing.id, quantity: 1 }],
+          delivery_address: deliveryAddress,
+          notes: notes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setStatus({ type: 'success', msg: '✅ Order placed successfully!' });
+      setTimeout(() => navigation.navigate('Orders'), 1500);
+    } catch (err) {
+      setStatus({ type: 'error', msg: '❌ ' + err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
       {listing.image_url ? (
@@ -70,9 +88,42 @@ const ListingDetailScreen = ({ route, navigation }) => {
         </View>
 
         {user?.role === 'customer' && (
-          <TouchableOpacity style={styles.orderBtn} onPress={handleOrder}>
-            <Text style={styles.orderBtnText}>Place Order</Text>
-          </TouchableOpacity>
+          <View style={styles.orderSection}>
+            <Text style={styles.sectionTitle}>Place Order</Text>
+
+            {status && (
+              <View style={[styles.statusBox, status.type === 'success' ? styles.statusSuccess : styles.statusError]}>
+                <Text style={styles.statusText}>{status.msg}</Text>
+              </View>
+            )}
+
+            <TextInput
+              style={styles.input}
+              placeholder="Delivery address *"
+              placeholderTextColor="#aaa"
+              value={deliveryAddress}
+              onChangeText={setDeliveryAddress}
+            />
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              placeholder="Notes for vendor (optional)"
+              placeholderTextColor="#aaa"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+
+            <TouchableOpacity
+              style={styles.orderBtn}
+              onPress={handleOrder}
+              disabled={loading}>
+              {loading
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={styles.orderBtnText}>Place Order — R {parseFloat(listing.price).toFixed(2)}</Text>}
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     </ScrollView>
@@ -101,6 +152,18 @@ const styles = StyleSheet.create({
   },
   metaLabel: { fontSize: 11, color: '#aaa', marginBottom: 4 },
   metaValue: { fontSize: 14, fontWeight: '700', color: '#333' },
+  orderSection: {
+    borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 20,
+  },
+  statusBox: { padding: 12, borderRadius: 8, marginBottom: 14 },
+  statusSuccess: { backgroundColor: '#D1FAE5' },
+  statusError: { backgroundColor: '#FEE2E2' },
+  statusText: { fontSize: 14, fontWeight: '600' },
+  input: {
+    borderWidth: 1, borderColor: '#ddd', borderRadius: 10,
+    padding: 14, fontSize: 15, marginBottom: 14, color: '#333',
+  },
+  textarea: { height: 80 },
   orderBtn: {
     backgroundColor: '#FF6B35', borderRadius: 12,
     padding: 16, alignItems: 'center',
