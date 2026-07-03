@@ -17,14 +17,16 @@ const CreateBusinessScreen = ({ navigation }) => {
     business_name: '', description: '', category: '', location: '',
   });
   const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState(null);
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
   const handleCreate = async () => {
     if (!form.business_name) {
-      Alert.alert('Error', 'Business name is required');
+      setStatus({ type: 'error', msg: 'Business name is required' });
       return;
     }
     setLoading(true);
+    setStatus(null);
     try {
       const res = await fetch(`${BASE_URL}/api/businesses`, {
         method: 'POST',
@@ -36,11 +38,10 @@ const CreateBusinessScreen = ({ navigation }) => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message);
-      Alert.alert('Success!', 'Business profile created.', [
-        { text: 'OK', onPress: () => navigation.replace('MyShop') },
-      ]);
+      setStatus({ type: 'success', msg: '✅ Business profile created!' });
+      setTimeout(() => navigation.replace('MyShop'), 1500);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      setStatus({ type: 'error', msg: '❌ ' + err.message });
     } finally {
       setLoading(false);
     }
@@ -49,6 +50,12 @@ const CreateBusinessScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.inner}>
       <Text style={styles.sub}>Set up your storefront on Kasi360</Text>
+
+      {status && (
+        <View style={[styles.statusBox, status.type === 'success' ? styles.statusSuccess : styles.statusError]}>
+          <Text style={styles.statusText}>{status.msg}</Text>
+        </View>
+      )}
 
       <TextInput style={styles.input} placeholder="Business Name *"
         placeholderTextColor="#aaa" value={form.business_name}
@@ -75,6 +82,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   inner: { padding: 24 },
   sub: { fontSize: 14, color: '#888', marginBottom: 24 },
+  statusBox: { padding: 12, borderRadius: 8, marginBottom: 16 },
+  statusSuccess: { backgroundColor: '#D1FAE5' },
+  statusError: { backgroundColor: '#FEE2E2' },
+  statusText: { fontSize: 14, fontWeight: '600' },
   input: {
     borderWidth: 1, borderColor: '#ddd', borderRadius: 10,
     padding: 14, fontSize: 15, marginBottom: 14, color: '#333',

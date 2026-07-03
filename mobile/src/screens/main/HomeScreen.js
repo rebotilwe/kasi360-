@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, ActivityIndicator, RefreshControl,
+  StyleSheet, ActivityIndicator, RefreshControl, Image,
 } from 'react-native';
 import { getListings } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -10,9 +10,13 @@ const CATEGORIES = ['All', 'Food', 'Clothing', 'Electronics', 'Services', 'Other
 
 const ListingCard = ({ item, onPress }) => (
   <TouchableOpacity style={styles.card} onPress={() => onPress(item)}>
-    <View style={styles.cardImagePlaceholder}>
-      <Text style={styles.cardEmoji}>🛍️</Text>
-    </View>
+    {item.image_url ? (
+      <Image source={{ uri: item.image_url }} style={styles.cardImage} />
+    ) : (
+      <View style={styles.cardImagePlaceholder}>
+        <Text style={styles.cardEmoji}>🛍️</Text>
+      </View>
+    )}
     <View style={styles.cardBody}>
       <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
       <Text style={styles.cardBusiness} numberOfLines={1}>{item.business_name}</Text>
@@ -53,7 +57,6 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]} 👋</Text>
@@ -61,7 +64,6 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Search */}
       <View style={styles.searchRow}>
         <TextInput
           style={styles.search}
@@ -74,7 +76,6 @@ const HomeScreen = ({ navigation }) => {
         />
       </View>
 
-      {/* Categories */}
       <FlatList
         data={CATEGORIES}
         horizontal
@@ -91,7 +92,6 @@ const HomeScreen = ({ navigation }) => {
         )}
       />
 
-      {/* Listings */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#FF6B35" />
@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff', borderRadius: 12, flexDirection: 'row',
     overflow: 'hidden', borderWidth: 1, borderColor: '#eee',
   },
+  cardImage: { width: 90, height: 90, resizeMode: 'cover' },
   cardImagePlaceholder: {
     width: 90, backgroundColor: '#FFF4F0', justifyContent: 'center', alignItems: 'center',
   },

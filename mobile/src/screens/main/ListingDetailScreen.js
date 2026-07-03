@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { createOrder } from '../../api/client';
 
@@ -28,9 +28,13 @@ const ListingDetailScreen = ({ route, navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.imagePlaceholder}>
-        <Text style={styles.emoji}>🛍️</Text>
-      </View>
+      {listing.image_url ? (
+        <Image source={{ uri: listing.image_url }} style={styles.image} />
+      ) : (
+        <View style={styles.imagePlaceholder}>
+          <Text style={styles.emoji}>🛍️</Text>
+        </View>
+      )}
       <View style={styles.body}>
         <Text style={styles.title}>{listing.title}</Text>
         <Text style={styles.business}>{listing.business_name}</Text>
@@ -71,6 +75,7 @@ const ListingDetailScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  image: { width: '100%', height: 220, resizeMode: 'cover' },
   imagePlaceholder: {
     height: 200, backgroundColor: '#FFF4F0',
     justifyContent: 'center', alignItems: 'center',
