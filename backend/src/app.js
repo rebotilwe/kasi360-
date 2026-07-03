@@ -6,6 +6,7 @@ const listingsRoutes = require('./routes/listings.routes');
 const ordersRoutes = require('./routes/orders.routes');
 const businessRoutes = require('./routes/businesses.routes');
 const adminRoutes = require('./routes/admin.routes');
+const reviewRoutes = require('./routes/reviews.routes');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/listings', listingsRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/businesses', businessRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/reviews', reviewRoutes);
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.method} ${req.path} not found` });
