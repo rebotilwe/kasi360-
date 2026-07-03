@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 
 const CATEGORIES = ['All', 'Food', 'Clothing', 'Electronics', 'Services', 'Other'];
 
-const ListingCard = ({ item, onPress }) => (
+const ListingCard = ({ item, onPress, navigation }) => (
   <TouchableOpacity style={styles.card} onPress={() => onPress(item)}>
     {item.image_url ? (
       <Image source={{ uri: item.image_url }} style={styles.cardImage} />
@@ -19,7 +19,12 @@ const ListingCard = ({ item, onPress }) => (
     )}
     <View style={styles.cardBody}>
       <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-      <Text style={styles.cardBusiness} numberOfLines={1}>{item.business_name}</Text>
+      <TouchableOpacity onPress={() => navigation.navigate('BusinessProfile', {
+        business_id: item.business_id,
+        business_name: item.business_name,
+      })}>
+        <Text style={styles.cardBusiness} numberOfLines={1}>{item.business_name}</Text>
+      </TouchableOpacity>
       <Text style={styles.cardLocation} numberOfLines={1}>📍 {item.location || 'Location TBC'}</Text>
       <Text style={styles.cardPrice}>R {parseFloat(item.price).toFixed(2)}</Text>
     </View>
@@ -102,15 +107,19 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.emptySubText}>Be the first to add one!</Text>
         </View>
       ) : (
-        <FlatList
-          data={listings}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <ListingCard item={item} onPress={(l) => navigation.navigate('ListingDetail', { listing: l })} />
-          )}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B35" />}
-        />
+      <FlatList
+  data={listings}
+  keyExtractor={(item) => item.id}
+  renderItem={({ item }) => (
+    <ListingCard
+      item={item}
+      onPress={(l) => navigation.navigate('ListingDetail', { listing: l })}
+      navigation={navigation}
+    />
+  )}
+  contentContainerStyle={styles.list}
+  refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#FF6B35" />}
+/>
       )}
     </View>
   );
