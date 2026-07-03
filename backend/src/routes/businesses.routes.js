@@ -32,5 +32,27 @@ router.get('/mine', protect, restrict('smme'), async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+// GET /api/businesses/:id — public, get business profile + listings
+router.get('/:id', async (req, res) => {
+  try {
+    const bizResult = await pool.query(
+      'SELECT * FROM business_profiles WHERE id = $1',
+      [req.params.id]
+    );
+    if (bizResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Business not found' });
+    }
+    const business = bizResult.rows[0];
+
+    const listingsResult = await pool.query(
+      `SELECT * FROM listings WHERE business_id = $1 AND is_available = true ORDER BY created_at DESC`,
+      [req.params.id]
+    );
+
+    res.json({ ...business, listings: listingsResult.rows });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;
