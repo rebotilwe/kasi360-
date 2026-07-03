@@ -2,7 +2,7 @@ const pool = require('../config/db');
 
 // GET /api/listings — public, with optional search/category filter
 const getListings = async (req, res) => {
-  const { search, category, page = 1, limit = 20 } = req.query;
+  const { search, category, listing_type, sort, page = 1, limit = 20 } = req.query;
   const offset = (page - 1) * limit;
 
   let query = `
@@ -21,9 +21,22 @@ const getListings = async (req, res) => {
     params.push(category);
     query += ` AND l.category = $${params.length}`;
   }
+  if (listing_type) {
+    params.push(listing_type);
+    query += ` AND l.listing_type = $${params.length}`;
+  }
+
+  // Sort
+  if (sort === 'price_asc') {
+    query += ` ORDER BY l.price ASC`;
+  } else if (sort === 'price_desc') {
+    query += ` ORDER BY l.price DESC`;
+  } else {
+    query += ` ORDER BY l.created_at DESC`;
+  }
 
   params.push(limit, offset);
-  query += ` ORDER BY l.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  query += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
 
   try {
     const result = await pool.query(query, params);
@@ -33,7 +46,6 @@ const getListings = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
 // GET /api/listings/:id — single listing
 const getListing = async (req, res) => {
   try {
