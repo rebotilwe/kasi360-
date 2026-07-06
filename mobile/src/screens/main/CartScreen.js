@@ -79,7 +79,7 @@ const CartScreen = ({ navigation }) => {
         <Text style={styles.emptyIcon}>🛒</Text>
         <Text style={styles.emptyTitle}>Your cart is empty</Text>
         <Text style={styles.emptySub}>Browse the marketplace and add items</Text>
-        <TouchableOpacity style={styles.browseBtn} onPress={() => navigation.navigate('Home')}>
+        <TouchableOpacity style={styles.browseBtn} onPress={() => navigation.navigate('Main', { screen: 'Home' })}>
           <Text style={styles.browseBtnText}>Browse Marketplace</Text>
         </TouchableOpacity>
       </View>
