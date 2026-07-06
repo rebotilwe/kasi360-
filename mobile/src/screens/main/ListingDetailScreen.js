@@ -1,53 +1,24 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Image, TextInput, ActivityIndicator,
+  Image, ActivityIndicator, Platform,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
 const ListingDetailScreen = ({ route, navigation }) => {
   const { listing } = route.params;
   const { user } = useAuth();
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [notes, setNotes] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(null);
+  const { addToCart, items } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
 
-  const handleOrder = async () => {
-    if (user?.role !== 'customer') {
-      setStatus({ type: 'error', msg: 'Only customers can place orders' });
-      return;
-    }
-    if (!deliveryAddress.trim()) {
-      setStatus({ type: 'error', msg: 'Please enter a delivery address' });
-      return;
-    }
-    setLoading(true);
-    setStatus(null);
-    try {
-      const token = localStorage.getItem('kasi360_token');
-      const res = await fetch('https://kasi360.onrender.com/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          business_id: listing.business_id,
-          items: [{ listing_id: listing.id, quantity: 1 }],
-          delivery_address: deliveryAddress,
-          notes: notes,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-      setStatus({ type: 'success', msg: '✅ Order placed successfully!' });
-      setTimeout(() => navigation.navigate('Orders'), 1500);
-    } catch (err) {
-      setStatus({ type: 'error', msg: '❌ ' + err.message });
-    } finally {
-      setLoading(false);
-    }
+  const inCart = items.find((i) => i.listing.id === listing.id);
+
+  const handleAddToCart = () => {
+    addToCart(listing, quantity);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
@@ -89,39 +60,42 @@ const ListingDetailScreen = ({ route, navigation }) => {
 
         {user?.role === 'customer' && (
           <View style={styles.orderSection}>
-            <Text style={styles.sectionTitle}>Place Order</Text>
+            <Text style={styles.sectionTitle}>Add to Cart</Text>
 
-            {status && (
-              <View style={[styles.statusBox, status.type === 'success' ? styles.statusSuccess : styles.statusError]}>
-                <Text style={styles.statusText}>{status.msg}</Text>
+            {/* Quantity selector */}
+            <View style={styles.qtyRow}>
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={() => setQuantity(Math.max(1, quantity - 1))}>
+                <Text style={styles.qtyBtnText}>−</Text>
+              </TouchableOpacity>
+              <Text style={styles.qtyValue}>{quantity}</Text>
+              <TouchableOpacity
+                style={styles.qtyBtn}
+                onPress={() => setQuantity(Math.min(listing.stock_qty || 99, quantity + 1))}>
+                <Text style={styles.qtyBtnText}>+</Text>
+              </TouchableOpacity>
+              <Text style={styles.qtyTotal}>
+                = R {(parseFloat(listing.price) * quantity).toFixed(2)}
+              </Text>
+            </View>
+
+            {added && (
+              <View style={styles.addedBox}>
+                <Text style={styles.addedText}>✅ Added to cart!</Text>
               </View>
             )}
 
-            <TextInput
-              style={styles.input}
-              placeholder="Delivery address *"
-              placeholderTextColor="#aaa"
-              value={deliveryAddress}
-              onChangeText={setDeliveryAddress}
-            />
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              placeholder="Notes for vendor (optional)"
-              placeholderTextColor="#aaa"
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
+            <TouchableOpacity style={styles.addBtn} onPress={handleAddToCart}>
+              <Text style={styles.addBtnText}>
+                {inCart ? `Update Cart (${inCart.quantity} in cart)` : '🛒 Add to Cart'}
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.orderBtn}
-              onPress={handleOrder}
-              disabled={loading}>
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.orderBtnText}>Place Order — R {parseFloat(listing.price).toFixed(2)}</Text>}
+              style={styles.viewCartBtn}
+              onPress={() => navigation.navigate('Cart')}>
+              <Text style={styles.viewCartBtnText}>View Cart</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -152,23 +126,31 @@ const styles = StyleSheet.create({
   },
   metaLabel: { fontSize: 11, color: '#aaa', marginBottom: 4 },
   metaValue: { fontSize: 14, fontWeight: '700', color: '#333' },
-  orderSection: {
-    borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 20,
+  orderSection: { borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 20 },
+  qtyRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16,
   },
-  statusBox: { padding: 12, borderRadius: 8, marginBottom: 14 },
-  statusSuccess: { backgroundColor: '#D1FAE5' },
-  statusError: { backgroundColor: '#FEE2E2' },
-  statusText: { fontSize: 14, fontWeight: '600' },
-  input: {
-    borderWidth: 1, borderColor: '#ddd', borderRadius: 10,
-    padding: 14, fontSize: 15, marginBottom: 14, color: '#333',
+  qtyBtn: {
+    width: 40, height: 40, borderRadius: 20, borderWidth: 1.5,
+    borderColor: '#FF6B35', justifyContent: 'center', alignItems: 'center',
   },
-  textarea: { height: 80 },
-  orderBtn: {
+  qtyBtnText: { fontSize: 20, color: '#FF6B35', fontWeight: '700' },
+  qtyValue: { fontSize: 20, fontWeight: '800', color: '#222', minWidth: 30, textAlign: 'center' },
+  qtyTotal: { fontSize: 16, fontWeight: '700', color: '#555' },
+  addedBox: {
+    backgroundColor: '#D1FAE5', padding: 10, borderRadius: 8, marginBottom: 12,
+  },
+  addedText: { color: '#065F46', fontWeight: '600', fontSize: 14 },
+  addBtn: {
     backgroundColor: '#FF6B35', borderRadius: 12,
-    padding: 16, alignItems: 'center',
+    padding: 16, alignItems: 'center', marginBottom: 10,
   },
-  orderBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  viewCartBtn: {
+    borderWidth: 1.5, borderColor: '#FF6B35', borderRadius: 12,
+    padding: 14, alignItems: 'center',
+  },
+  viewCartBtnText: { color: '#FF6B35', fontWeight: '700', fontSize: 15 },
 });
 
 export default ListingDetailScreen;

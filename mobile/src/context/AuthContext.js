@@ -60,12 +60,16 @@ export const AuthProvider = ({ children }) => {
     setUser(data.user);
     return data;
   };
-
-  const logout = async () => {
+const logout = async () => {
+  try {
     await storage.deleteItem('kasi360_token');
+  } catch (err) {
+    console.error('Logout error:', err);
+  } finally {
     setToken(null);
     setUser(null);
-  };
+  }
+};
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>

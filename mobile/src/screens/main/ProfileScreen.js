@@ -5,12 +5,17 @@ import { useAuth } from '../../context/AuthContext';
 const ProfileScreen = () => {
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
+const handleLogout = () => {
+  if (typeof window !== 'undefined') {
+    const confirmed = window.confirm('Are you sure you want to logout?');
+    if (confirmed) logout();
+  } else {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Logout', style: 'destructive', onPress: logout },
     ]);
-  };
+  }
+};
 
   const roleLabel = user?.role === 'smme' ? '🏪 SMME / Vendor' : '🛒 Customer';
 

@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  ActivityIndicator, Image, TouchableOpacity, TextInput,
+  ActivityIndicator, Image, TouchableOpacity, TextInput, Platform,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
 const BASE_URL = 'https://kasi360.onrender.com';
-const getToken = () => {
-  if (typeof localStorage !== 'undefined') return localStorage.getItem('kasi360_token');
-  return null;
+
+const getToken = async () => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem('kasi360_token');
+  }
+  const SecureStore = await import('expo-secure-store');
+  return await SecureStore.getItemAsync('kasi360_token');
 };
 
 const STATUS_COLORS = {
@@ -40,14 +44,13 @@ const OrderDetailScreen = ({ route }) => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const token = getToken();
+        const token = await getToken();
         const res = await fetch(`${BASE_URL}/api/orders/${order_id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         setOrder(data);
 
-        // Check if already reviewed
         if (user?.role === 'customer') {
           const revRes = await fetch(`${BASE_URL}/api/reviews/order/${order_id}`, {
             headers: { Authorization: `Bearer ${token}` },
@@ -76,11 +79,12 @@ const OrderDetailScreen = ({ route }) => {
     setReviewLoading(true);
     setReviewStatus(null);
     try {
+      const token = await getToken();
       const res = await fetch(`${BASE_URL}/api/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${getToken()}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           order_id,
@@ -110,7 +114,6 @@ const OrderDetailScreen = ({ route }) => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.orderId}>Order #{order.id.slice(0, 8).toUpperCase()}</Text>
         <View style={[styles.badge, { backgroundColor: STATUS_COLORS[order.status] || '#888' }]}>
@@ -118,7 +121,6 @@ const OrderDetailScreen = ({ route }) => {
         </View>
       </View>
 
-      {/* Info */}
       <View style={styles.section}>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Business</Text>
@@ -152,7 +154,6 @@ const OrderDetailScreen = ({ route }) => {
         )}
       </View>
 
-      {/* Items */}
       <Text style={styles.sectionTitle}>Items</Text>
       <View style={styles.section}>
         {order.items?.map((item, index) => (
@@ -182,7 +183,6 @@ const OrderDetailScreen = ({ route }) => {
         ))}
       </View>
 
-      {/* Total */}
       <View style={styles.totalSection}>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal</Text>
@@ -198,7 +198,6 @@ const OrderDetailScreen = ({ route }) => {
         </View>
       </View>
 
-      {/* Review Section — customers only */}
       {user?.role === 'customer' && (
         <View style={styles.reviewSection}>
           <Text style={styles.sectionTitle}>

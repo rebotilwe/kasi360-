@@ -19,6 +19,7 @@ import BusinessProfileScreen from '../screens/main/BusinessProfileScreen';
 import MyShopScreen from '../screens/smme/MyShopScreen';
 import CreateListingScreen from '../screens/smme/CreateListingScreen';
 import CreateBusinessScreen from '../screens/smme/CreateBusinessScreen';
+import CartScreen from '../screens/main/CartScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -79,6 +80,8 @@ const AppNavigator = () => {
             />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen}
               options={{ headerShown: true, title: 'Order Details' }} />
+              <Stack.Screen name="Cart" component={CartScreen}
+  options={{ headerShown: true, title: 'My Cart' }} />
             <Stack.Screen name="CreateBusiness" component={CreateBusinessScreen}
               options={{ headerShown: true, title: 'Business Profile' }} />
           </>

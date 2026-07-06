@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { getListings } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
 const CATEGORIES = ['All', 'Food', 'Clothing', 'Electronics', 'Services', 'Other'];
 const SORT_OPTIONS = [
@@ -48,6 +49,7 @@ const ListingCard = ({ item, onPress, navigation }) => (
 
 const HomeScreen = ({ navigation }) => {
   const { user } = useAuth();
+  const { totalItems } = useCart();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -87,11 +89,23 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.greeting}>Hello, {user?.name?.split(' ')[0]} 👋</Text>
           <Text style={styles.headerSub}>What are you looking for?</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.filterToggle, showFilters && styles.filterToggleActive]}
-          onPress={() => setShowFilters(!showFilters)}>
-          <Text style={styles.filterToggleText}>⚙️ Filters</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={[styles.filterToggle, showFilters && styles.filterToggleActive]}
+            onPress={() => setShowFilters(!showFilters)}>
+            <Text style={styles.filterToggleText}>⚙️ Filters</Text>
+          </TouchableOpacity>
+          {user?.role === 'customer' && (
+            <TouchableOpacity style={styles.cartBtn} onPress={() => navigation.navigate('Cart')}>
+              <Text style={styles.cartBtnText}>🛒</Text>
+              {totalItems > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>{totalItems}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Search */}
@@ -122,7 +136,6 @@ const HomeScreen = ({ navigation }) => {
               </TouchableOpacity>
             ))}
           </View>
-
           <Text style={styles.filterLabel}>Type</Text>
           <View style={styles.filterRow}>
             {TYPES.map((t) => (
@@ -198,12 +211,21 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 22, fontWeight: '800', color: '#fff' },
   headerSub: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   filterToggle: {
     backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 14,
     paddingVertical: 7, borderRadius: 20,
   },
   filterToggleActive: { backgroundColor: '#fff' },
   filterToggleText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+  cartBtn: { position: 'relative', padding: 4 },
+  cartBtnText: { fontSize: 24 },
+  cartBadge: {
+    position: 'absolute', top: -4, right: -4,
+    backgroundColor: '#fff', borderRadius: 10,
+    width: 20, height: 20, justifyContent: 'center', alignItems: 'center',
+  },
+  cartBadgeText: { fontSize: 11, fontWeight: '800', color: '#FF6B35' },
   searchRow: { padding: 16, paddingBottom: 0 },
   search: {
     backgroundColor: '#fff', borderRadius: 10, padding: 12,
