@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ActivityIndicator, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '../context/AuthContext';
 
@@ -15,12 +16,11 @@ import ProfileScreen from '../screens/main/ProfileScreen';
 import OrdersScreen from '../screens/main/OrdersScreen';
 import OrderDetailScreen from '../screens/main/OrderDetailScreen';
 import BusinessProfileScreen from '../screens/main/BusinessProfileScreen';
+import CartScreen from '../screens/main/CartScreen';
 
 import MyShopScreen from '../screens/smme/MyShopScreen';
 import CreateListingScreen from '../screens/smme/CreateListingScreen';
 import CreateBusinessScreen from '../screens/smme/CreateBusinessScreen';
-import CartScreen from '../screens/main/CartScreen';
-
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -30,12 +30,28 @@ const MainTabs = () => {
 
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: '#FF6B35',
-        tabBarInactiveTintColor: '#888',
-        tabBarStyle: { backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee' },
-      }}
+        tabBarInactiveTintColor: '#aaa',
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#f0f0f0',
+          paddingBottom: 4,
+          paddingTop: 4,
+          height: 60,
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarIcon: ({ focused, color }) => {
+          let iconName;
+          if (route.name === 'Home') iconName = focused ? 'storefront' : 'storefront-outline';
+          else if (route.name === 'Orders') iconName = focused ? 'receipt' : 'receipt-outline';
+          else if (route.name === 'MyShop') iconName = focused ? 'bag' : 'bag-outline';
+          else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
+          return <Ionicons name={iconName} size={22} color={color} />;
+        },
+      })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Marketplace' }} />
       <Tab.Screen name="Orders" component={OrdersScreen} options={{ tabBarLabel: 'Orders' }} />
@@ -73,15 +89,12 @@ const AppNavigator = () => {
               options={{ headerShown: true, title: 'Listing' }} />
             <Stack.Screen name="CreateListing" component={CreateListingScreen}
               options={{ headerShown: true, title: 'Add Listing' }} />
-            <Stack.Screen
-              name="BusinessProfile"
-              component={BusinessProfileScreen}
-              options={{ headerShown: true, title: 'Business Profile' }}
-            />
+            <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen}
+              options={{ headerShown: true, title: 'Business Profile' }} />
             <Stack.Screen name="OrderDetail" component={OrderDetailScreen}
               options={{ headerShown: true, title: 'Order Details' }} />
-              <Stack.Screen name="Cart" component={CartScreen}
-  options={{ headerShown: true, title: 'My Cart' }} />
+            <Stack.Screen name="Cart" component={CartScreen}
+              options={{ headerShown: true, title: 'My Cart' }} />
             <Stack.Screen name="CreateBusiness" component={CreateBusinessScreen}
               options={{ headerShown: true, title: 'Business Profile' }} />
           </>
